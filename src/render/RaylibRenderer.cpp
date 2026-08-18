@@ -56,7 +56,7 @@ void RaylibRenderer::drawEntity(EntityKind kind, const Vec2i& pos, Visibility vi
     {
     case EntityKind::Player:
         glyph = "@";
-        color = YELLOW;
+        color = BLACK;
         break;
     case EntityKind::Wanderer:
         glyph = "W";
