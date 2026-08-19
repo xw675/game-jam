@@ -6,6 +6,12 @@ namespace Balance {
     constexpr int kPlayerMight = 1;
     constexpr int kPlayerDamageDie = 6;
 
+    constexpr int kHunterHp = 6;
+    constexpr int kHunterDefence = 11;
+    constexpr int kHunterMight = 2;
+    constexpr int kHunterDamageDie = 4;
+    constexpr int kMonsterSenseRange = 8;
+
     constexpr int kTokenCount = 4;
     constexpr int kVisionRadius = 6;
     constexpr int kMapWidth = 40;
