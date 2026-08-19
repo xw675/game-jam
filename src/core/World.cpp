@@ -1,6 +1,8 @@
 #include "World.hpp"
 #include "Hunter.hpp"
+#include "Balance.hpp"
 #include <algorithm>
+#include <cstddef>
 #include <utility>
 
 namespace {
@@ -9,12 +11,12 @@ constexpr std::size_t kMaxMessages = 3;
 
 const char* kindName(EntityKind kind) {
     switch (kind) {
-        case EntityKind::Player: return "You";
+        case EntityKind::Player:   return "You";
         case EntityKind::Wanderer: return "The wanderer";
-        case EntityKind::Hunter: return "The hunter";
-        case EntityKind::Guard: return "The guard";
-        case EntityKind::Token: return "The token";
-        case EntityKind::Hall: return "The hall";
+        case EntityKind::Hunter:   return "The hunter";
+        case EntityKind::Guard:    return "The guard";
+        case EntityKind::Token:    return "The token";
+        case EntityKind::Hall:     return "The hall";
     }
     return "Something";
 }
@@ -24,9 +26,9 @@ const char* kindName(EntityKind kind) {
 World::World(GeneratedMap generated, Rng& rng)
     : m_map(std::move(generated.map)),
       m_player(generated.playerStart),
-      m_tokens(std::move(generated.tokenPositions)),
+      m_tokenPositions(std::move(generated.tokenPositions)),
       m_rng(rng) {
-    for (const Vec2i& guardPost : m_tokens) {
+    for (const Vec2i& guardPost : m_tokenPositions) {
         m_monster.push_back(std::make_unique<Hunter>(guardPost));
     }
     log("Steal the four tokens, then reach the Hall.");
@@ -48,8 +50,8 @@ const std::vector<std::unique_ptr<Monster>>& World::monsters() const {
     return m_monster;
 }
 
-const std::vector<Vec2i>& World::tokens() const {
-    return m_tokens;
+const std::vector<Vec2i>& World::tokenPositions() const {
+    return m_tokenPositions;
 }
 
 const std::deque<std::string>& World::messages() const {
@@ -64,6 +66,10 @@ GameState World::state() const {
     return m_state;
 }
 
+int World::alarm() const {
+    return m_alarm;
+}
+
 Monster* World::monsterAt(const Vec2i& p) const {
     for (const std::unique_ptr<Monster>& monster : m_monster) {
         if (monster->isAlive() && monster->position() == p) {
@@ -74,7 +80,9 @@ Monster* World::monsterAt(const Vec2i& p) const {
 }
 
 bool World::isFree(const Vec2i& p) const {
-    return m_map.isWalkable(p) && monsterAt(p) == nullptr && !(p == m_player.position());
+    return m_map.isWalkable(p)
+        && monsterAt(p) == nullptr
+        && !(p == m_player.position());
 }
 
 void World::moveEntity(Entity& entity, const Vec2i& to) {
@@ -101,9 +109,79 @@ void World::playerMove(const Vec2i& delta) {
         attack(m_player, *monster);
     } else {
         moveEntity(m_player, target);
+        onPlayerEntered(target);
     }
 
-    advanceTurn();
+    // Reaching the Hall ends the run on the spot: escaping IS the win, so the
+    // keep does not get a free swing at someone already out the door.
+    if (m_state == GameState::Play) {
+        advanceTurn();
+    }
+}
+
+void World::onPlayerEntered(const Vec2i& p) {
+    for (std::size_t i = 0; i < m_tokenPositions.size(); ++i) {
+        const int index = static_cast<int>(i);
+        if (m_tokenPositions[i] == p && !m_player.hasToken(index)) {
+            takeTokenAt(index);
+            return;     // a tile holds at most one token, so stop looking
+        }
+    }
+
+    if (m_map.at(p) == Tile::Hall) {
+        if (m_player.hasAllTokens()) {
+            m_state = GameState::Won;
+            log("You are out, and all four are yours. Press R to play again.");
+        } else {
+            log("The Hall is shut. It opens to four.");
+        }
+    }
+}
+
+void World::takeTokenAt(int index) {
+    m_player.takeToken(index);
+
+    // The token is the only heal in the game. Without it the run is one long
+    // subtraction: four guarded tokens cost more HP than the player owns, so
+    // the loop was closed but not winnable. Healing here -- and nowhere else --
+    // keeps the tension on *when* you go for the next token, not on inventory.
+    m_player.heal(Balance::kTokenHeal);
+
+    log("You lift the token and it makes you whole. The keep hears it.");
+    raiseAlarm();
+}
+
+void World::raiseAlarm() {
+    ++m_alarm;
+    // Flat per token, not alarm x count. The population still climbs -- the
+    // hunters from the last alarm are still out there -- but it climbs linearly
+    // instead of 1+2+3+4, which put fourteen hunters on a 40x24 map.
+    spawnHunters(Balance::kHuntersPerAlarm);
+}
+
+void World::spawnHunters(int count) {
+    // Built once, then drawn from without replacement, so two hunters can never
+    // land on the same tile.
+    std::vector<Vec2i> candidates = freeSpawnTiles(Balance::kSpawnMinDistance);
+
+    for (int i = 0; i < count && !candidates.empty(); ++i) {
+        const int pick = m_rng.range(0, static_cast<int>(candidates.size()) - 1);
+        m_monster.push_back(std::make_unique<Hunter>(candidates[static_cast<std::size_t>(pick)]));
+        candidates.erase(candidates.begin() + static_cast<std::ptrdiff_t>(pick));
+    }
+}
+
+std::vector<Vec2i> World::freeSpawnTiles(int minDistanceFromPlayer) const {
+    std::vector<Vec2i> tiles;
+    for (int y = 0; y < m_map.height(); ++y) {
+        for (int x = 0; x < m_map.width(); ++x) {
+            const Vec2i p{x, y};
+            if (isFree(p) && manhattan(p, m_player.position()) >= minDistanceFromPlayer) {
+                tiles.push_back(p);
+            }
+        }
+    }
+    return tiles;
 }
 
 void World::attack(Entity& attacker, Entity& defender) {
@@ -148,11 +226,38 @@ void World::advanceTurn() {
     }
 
     m_monster.erase(
-        std::remove_if(m_monster.begin(), m_monster.end(), [](const std::unique_ptr<Monster>& m) { return !m->isAlive(); }),
+        std::remove_if(m_monster.begin(), m_monster.end(),
+                       [](const std::unique_ptr<Monster>& m) { return !m->isAlive(); }),
         m_monster.end());
 
+    checkPlayerDeath();
+}
+
+void World::checkPlayerDeath() {
     if (!m_player.isAlive()) {
         m_state = GameState::Dead;
         log("You die. Press R to begin again.");
     }
 }
+
+#ifndef NDEBUG
+
+void World::debugGrantToken() {
+    for (std::size_t i = 0; i < m_tokenPositions.size(); ++i) {
+        if (!m_player.hasToken(static_cast<int>(i))) {
+            takeTokenAt(static_cast<int>(i));   // same path as real pickup
+            return;
+        }
+    }
+}
+
+void World::debugKillMonsters() {
+    m_monster.clear();
+}
+
+void World::debugHurtPlayer(int amount) {
+    m_player.takeDamage(amount);
+    checkPlayerDeath();
+}
+
+#endif

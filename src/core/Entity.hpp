@@ -12,6 +12,7 @@ public:
 
     const Vec2i& position() const;
     int hp() const;
+    int maxHp() const;
     int defence() const;
     int damageDie() const;
     bool isAlive() const;
@@ -20,10 +21,12 @@ public:
 
     void moveTo(const Vec2i& p);
     void takeDamage(int amount);
+    void heal(int amount);
 
 protected:
     Vec2i m_pos{};
     int m_hp = 1;
+    int m_maxHp = 1;    // set from the starting hp; nothing ever raises it
     int m_defence = 10;
     int m_damageDie = 3;
 };

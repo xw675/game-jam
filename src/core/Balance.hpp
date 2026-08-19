@@ -17,4 +17,9 @@ namespace Balance {
     constexpr int kMapWidth = 40;
     constexpr int kMapHeight = 24;
     constexpr int kMinRooms = 6;
+
+    constexpr int kHuntersPerAlarm = 1;   // spawned per token, flat
+    constexpr int kSpawnMinDistance = 10; // no hunter ever appears in your lap
+    constexpr int kAlarmWakesAll = 3;      // at this alarm the keep stops sleeping
+    constexpr int kTokenHeal = kPlayerHp;   // a token restores you; the only heal in the game
 }
