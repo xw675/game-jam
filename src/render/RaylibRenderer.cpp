@@ -38,7 +38,7 @@ void RaylibRenderer::drawTile(Tile t, const Vec2i& pos, Visibility vis) {
 }
 
 void RaylibRenderer::drawEntity(EntityKind kind, const Vec2i& pos, Visibility vis) {
-    if (vis != Visibility::Visible) {
+    if (vis == Visibility::Unseen) {
         return;
     }
 
@@ -74,6 +74,10 @@ void RaylibRenderer::drawEntity(EntityKind kind, const Vec2i& pos, Visibility vi
         glyph = "E";
         color = GREEN;
         break;
+    }
+
+    if (vis == Visibility::Remembered) {
+        color = Fade(color, 0.45f);
     }
 
     DrawText(glyph, posX, posY, m_fontPx, color);
