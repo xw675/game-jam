@@ -1,6 +1,7 @@
 #include "World.hpp"
 #include "Hunter.hpp"
 #include "Balance.hpp"
+#include "Fov.hpp"
 #include <algorithm>
 #include <cstddef>
 #include <utility>
@@ -11,12 +12,18 @@ constexpr std::size_t kMaxMessages = 3;
 
 const char* kindName(EntityKind kind) {
     switch (kind) {
-        case EntityKind::Player:   return "You";
-        case EntityKind::Wanderer: return "The wanderer";
-        case EntityKind::Hunter:   return "The hunter";
-        case EntityKind::Guard:    return "The guard";
-        case EntityKind::Token:    return "The token";
-        case EntityKind::Hall:     return "The hall";
+        case EntityKind::Player: 
+            return "You";
+        case EntityKind::Wanderer:
+            return "The wanderer";
+        case EntityKind::Hunter:
+            return "The hunter";
+        case EntityKind::Guard:
+            return "The guard";
+        case EntityKind::Token:
+            return "The token";
+        case EntityKind::Hall:
+            return "The hall";
     }
     return "Something";
 }
@@ -31,7 +38,19 @@ World::World(GeneratedMap generated, Rng& rng)
     for (const Vec2i& guardPost : m_tokenPositions) {
         m_monster.push_back(std::make_unique<Hunter>(guardPost));
     }
+    refreshVisibility(); // the player can see their own starting room
     log("Steal the four tokens, then reach the Hall.");
+}
+
+void World::refreshVisibility() {
+    updateVisibility(m_map, m_player.position(), Balance::kVisionRadius, m_visibility);
+}
+
+Visibility World::visibilityAt(const Vec2i& p) const {
+    if (!m_map.inBounds(p)) {
+        return Visibility::Unseen;
+    }
+    return m_visibility[static_cast<std::size_t>(p.y * m_map.width() + p.x)];
 }
 
 const Map& World::map() const {
@@ -80,9 +99,7 @@ Monster* World::monsterAt(const Vec2i& p) const {
 }
 
 bool World::isFree(const Vec2i& p) const {
-    return m_map.isWalkable(p)
-        && monsterAt(p) == nullptr
-        && !(p == m_player.position());
+    return m_map.isWalkable(p) && monsterAt(p) == nullptr && !(p == m_player.position());
 }
 
 void World::moveEntity(Entity& entity, const Vec2i& to) {
@@ -112,8 +129,10 @@ void World::playerMove(const Vec2i& delta) {
         onPlayerEntered(target);
     }
 
-    // Reaching the Hall ends the run on the spot: escaping IS the win, so the
-    // keep does not get a free swing at someone already out the door.
+    // Recomputed once per accepted input, not once per frame.
+    refreshVisibility();
+
+    // Reaching the Hall ends the run on the spot
     if (m_state == GameState::Play) {
         advanceTurn();
     }
@@ -124,7 +143,7 @@ void World::onPlayerEntered(const Vec2i& p) {
         const int index = static_cast<int>(i);
         if (m_tokenPositions[i] == p && !m_player.hasToken(index)) {
             takeTokenAt(index);
-            return;     // a tile holds at most one token, so stop looking
+            return; // a tile holds at most one token, so stop looking
         }
     }
 
@@ -141,10 +160,6 @@ void World::onPlayerEntered(const Vec2i& p) {
 void World::takeTokenAt(int index) {
     m_player.takeToken(index);
 
-    // The token is the only heal in the game. Without it the run is one long
-    // subtraction: four guarded tokens cost more HP than the player owns, so
-    // the loop was closed but not winnable. Healing here -- and nowhere else --
-    // keeps the tension on *when* you go for the next token, not on inventory.
     m_player.heal(Balance::kTokenHeal);
 
     log("You lift the token and it makes you whole. The keep hears it.");
@@ -153,15 +168,12 @@ void World::takeTokenAt(int index) {
 
 void World::raiseAlarm() {
     ++m_alarm;
-    // Flat per token, not alarm x count. The population still climbs -- the
-    // hunters from the last alarm are still out there -- but it climbs linearly
-    // instead of 1+2+3+4, which put fourteen hunters on a 40x24 map.
+    // Flat per token, not alarm x count.
     spawnHunters(Balance::kHuntersPerAlarm);
 }
 
 void World::spawnHunters(int count) {
-    // Built once, then drawn from without replacement, so two hunters can never
-    // land on the same tile.
+    // Built once, then drawn from without replacement, so two hunters can never land on the same tile.
     std::vector<Vec2i> candidates = freeSpawnTiles(Balance::kSpawnMinDistance);
 
     for (int i = 0; i < count && !candidates.empty(); ++i) {
@@ -189,8 +201,7 @@ void World::attack(Entity& attacker, Entity& defender) {
     const int total = roll + attacker.might();
 
     const bool byPlayer = attacker.kind() == EntityKind::Player;
-    const std::string margin = " (" + std::to_string(total)
-                             + " vs " + std::to_string(defender.defence()) + ").";
+    const std::string margin = " (" + std::to_string(total) + " vs " + std::to_string(defender.defence()) + ").";
 
     if (total < defender.defence()) {
         log(std::string(kindName(attacker.kind())) + (byPlayer ? " miss " : " misses ")
@@ -227,7 +238,9 @@ void World::advanceTurn() {
 
     m_monster.erase(
         std::remove_if(m_monster.begin(), m_monster.end(),
-                       [](const std::unique_ptr<Monster>& m) { return !m->isAlive(); }),
+                       [](const std::unique_ptr<Monster>& m) { 
+                        return !m->isAlive(); 
+                    }),
         m_monster.end());
 
     checkPlayerDeath();
@@ -240,12 +253,10 @@ void World::checkPlayerDeath() {
     }
 }
 
-#ifndef NDEBUG
-
 void World::debugGrantToken() {
     for (std::size_t i = 0; i < m_tokenPositions.size(); ++i) {
         if (!m_player.hasToken(static_cast<int>(i))) {
-            takeTokenAt(static_cast<int>(i));   // same path as real pickup
+            takeTokenAt(static_cast<int>(i)); // same path as real pickup
             return;
         }
     }
@@ -260,4 +271,9 @@ void World::debugHurtPlayer(int amount) {
     checkPlayerDeath();
 }
 
-#endif
+// Marking every tile Remembered. "seen once, never Unseen again" is already the rule, 
+// so the next refreshVisibility() lights up whatever is genuinely in view and leaves the rest drawn dim.
+void World::debugRevealMap() {
+    std::fill(m_visibility.begin(), m_visibility.end(), Visibility::Remembered);
+    refreshVisibility();
+}

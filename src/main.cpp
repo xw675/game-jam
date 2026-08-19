@@ -48,6 +48,7 @@ int main(int argc, char** argv) {
             world = newRun(rng);
         }
 
+        if (IsKeyPressed(KEY_F1)) world->debugRevealMap();
         if (IsKeyPressed(KEY_F2)) world->debugGrantToken();
         if (IsKeyPressed(KEY_F3)) world->debugKillMonsters();
         if (IsKeyPressed(KEY_F4)) world->debugHurtPlayer(5);
@@ -66,20 +67,25 @@ int main(int argc, char** argv) {
         for (int y = 0; y < map.height(); ++y) {
             for (int x = 0; x < map.width(); ++x) {
                 const Vec2i p{x, y};
-                renderer.drawTile(map.at(p), p, Visibility::Visible);
+                renderer.drawTile(map.at(p), p, world->visibilityAt(p));
             }
         }
 
-        // A token is on the map until the player is carrying it.
+        // A token is on the map until the player is carrying it. Tokens are
+        // landmarks: they never move, so a remembered one stays drawn (dim).
         const std::vector<Vec2i>& tokens = world->tokenPositions();
         for (std::size_t i = 0; i < tokens.size(); ++i) {
             if (!world->player().hasToken(static_cast<int>(i))) {
-                renderer.drawEntity(EntityKind::Token, tokens[i], Visibility::Visible);
+                renderer.drawEntity(EntityKind::Token, tokens[i], world->visibilityAt(tokens[i]));
             }
         }
 
+        // Monsters are the opposite: they move, so a remembered one would be a
+        // lie about where it is now. Drawn only while actually in view.
         for (const std::unique_ptr<Monster>& monster : world->monsters()) {
-            renderer.drawEntity(monster->kind(), monster->position(), Visibility::Visible);
+            if (world->visibilityAt(monster->position()) == Visibility::Visible) {
+                renderer.drawEntity(monster->kind(), monster->position(), Visibility::Visible);
+            }
         }
 
         renderer.drawEntity(EntityKind::Player, world->player().position(), Visibility::Visible);

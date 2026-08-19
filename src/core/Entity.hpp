@@ -26,7 +26,7 @@ public:
 protected:
     Vec2i m_pos{};
     int m_hp = 1;
-    int m_maxHp = 1;    // set from the starting hp; nothing ever raises it
+    int m_maxHp = 1;
     int m_defence = 10;
     int m_damageDie = 3;
 };

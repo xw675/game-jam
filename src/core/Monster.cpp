@@ -15,8 +15,8 @@ void Monster::updateAwareness(const World& world) {
     }
     // Two ways to wake up: got close, or the keep is loud enough that
     // nobody is asleep any more.
-    if (world.alarm() >= Balance::kAlarmWakesAll
-        || manhattan(m_pos, world.player().position()) <= Balance::kMonsterSenseRange) {
+    if (world.alarm() >= Balance::kAlarmWakesAll || 
+        manhattan(m_pos, world.player().position()) <= Balance::kMonsterSenseRange) {
         m_aware = true;
     }
 }

@@ -9,7 +9,7 @@ public:
     int range(int lo, int hi);
 };
 
-// RNG to generate 32-bit unsigned int
+// RNG to generate 32bit unsigned int
 class DefaultRng final : public Rng {
 public:
     explicit DefaultRng(std::uint32_t seed);

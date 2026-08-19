@@ -33,6 +33,9 @@ public:
     GameState state() const;
     int alarm() const;
 
+    // What the player currently knows about a tile
+    Visibility visibilityAt(const Vec2i& p) const;
+
     struct MoveEvent {
         EntityKind kind;
         Vec2i from;
@@ -49,10 +52,12 @@ public:
     void debugGrantToken();
     void debugKillMonsters();
     void debugHurtPlayer(int amount);
+    void debugRevealMap();
 
 private:
     void advanceTurn();
     void checkPlayerDeath();
+    void refreshVisibility();
 
     // What standing on a tile means a token to lift, or the Hall to escape by.
     void onPlayerEntered(const Vec2i& p);
@@ -67,6 +72,8 @@ private:
     std::vector<Vec2i> m_tokenPositions;
     std::deque<std::string> m_message;
     std::vector<MoveEvent> m_lastTurnMoves;
+    // One Visibility per tile
+    std::vector<Visibility> m_visibility;
     Rng& m_rng;
     GameState m_state = GameState::Play;
     int m_alarm = 0;

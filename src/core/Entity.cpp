@@ -38,8 +38,6 @@ void Entity::takeDamage(int amount) {
     }
 }
 
-// Clamped at m_maxHp, and the dead stay dead: healing is a top-up, never a
-// resurrection. Both guards live here so no caller has to remember them.
 void Entity::heal(int amount) {
     if (!isAlive()) {
         return;

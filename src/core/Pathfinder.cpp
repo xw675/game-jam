@@ -19,8 +19,8 @@ struct CheapestFirst {
 
 }
 
-std::vector<Vec2i> findPath(const Map& map, const Vec2i& start, const Vec2i& goal,
-                            const std::function<bool(const Vec2i&)>& blocked) {
+std::vector<Vec2i> findPath(const Map& map, const Vec2i& start, const Vec2i& goal, 
+    const std::function<bool(const Vec2i&)>& blocked) {
     std::vector<Vec2i> path;
     if (!map.isWalkable(start) || !map.isWalkable(goal)) {
         return path;
