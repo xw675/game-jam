@@ -3,11 +3,15 @@
 
 class RaylibRenderer : public Renderer {
 public:
+    static constexpr int kHudPx = 40; // strip above the map
+    static constexpr int kLogPx = 72; // strip below the map, 3 lines
+
     RaylibRenderer(int tilePx, int fontPx);
     void beginFrame() override;
     void drawTile(Tile t, const Vec2i& pos, Visibility vis) override;
     void drawEntity(EntityKind kind, const Vec2i& pos, Visibility vis) override;
-    void drawHud(int hp, int maxHp, int seals, int alarm) override;
+    void drawHud(int hp, int maxHp, int tokens, int alarm) override;
+    void drawLog(const std::deque<std::string>& lines) override;
     void endFrame() override;
 private:
     int m_tilePx;

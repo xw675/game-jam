@@ -1,10 +1,6 @@
 #include "RaylibRenderer.hpp"
 #include "raylib.h"
 
-namespace {
-constexpr int kHudHeight = 40;
-}
-
 RaylibRenderer::RaylibRenderer(int tilePx, int fontPx) 
     : m_tilePx(tilePx), m_fontPx(fontPx) {}
 
@@ -19,7 +15,7 @@ void RaylibRenderer::drawTile(Tile t, const Vec2i& pos, Visibility vis) {
     }
 
     int posX = pos.x * m_tilePx;
-    int posY = pos.y * m_tilePx + kHudHeight; //leave space for HUD
+    int posY = pos.y * m_tilePx + kHudPx; //leave space for HUD
 
     Color color = RAYWHITE;
     switch (t) {
@@ -47,7 +43,7 @@ void RaylibRenderer::drawEntity(EntityKind kind, const Vec2i& pos, Visibility vi
     }
 
     int posX = pos.x * m_tilePx + m_tilePx / 4;
-    int posY = pos.y * m_tilePx + kHudHeight + m_tilePx / 8;
+    int posY = pos.y * m_tilePx + kHudPx + m_tilePx / 8;
 
     const char* glyph = "?";
     Color color = WHITE;
@@ -85,6 +81,15 @@ void RaylibRenderer::drawEntity(EntityKind kind, const Vec2i& pos, Visibility vi
 
 void RaylibRenderer::drawHud(int hp, int maxHp, int tokens, int alarm) {
     DrawText(TextFormat("HP: %d/%d  Tokens: %d/4  Alarm: %d", hp, maxHp, tokens, alarm), 10, 10, 20, GREEN);
+}
+
+void RaylibRenderer::drawLog(const std::deque<std::string>& lines) {
+    const int top = GetScreenHeight() - kLogPx + 6;
+    int row = 0;
+    for (const std::string& line : lines) {
+        DrawText(line.c_str(), 10, top + row * (m_fontPx + 2), m_fontPx - 4, LIGHTGRAY);
+        ++row;
+    }
 }
 
 void RaylibRenderer::endFrame() {
