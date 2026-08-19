@@ -22,13 +22,16 @@ public:
     Player& player();
 
     const std::vector<std::unique_ptr<Monster>>& monsters() const;
-    const std::vector<Vec2i>& tokens() const;
+
+    const std::vector<Vec2i>& tokenPositions() const;
+
     const std::deque<std::string>& messages() const;
 
     Monster* monsterAt(const Vec2i& p) const;
 
     bool isFree(const Vec2i& p) const;
     GameState state() const;
+    int alarm() const;
 
     struct MoveEvent {
         EntityKind kind;
@@ -43,15 +46,28 @@ public:
     void attack(Entity& attacker, Entity& defender);
     void log(std::string message);
 
+    void debugGrantToken();
+    void debugKillMonsters();
+    void debugHurtPlayer(int amount);
+
 private:
     void advanceTurn();
+    void checkPlayerDeath();
+
+    // What standing on a tile means a token to lift, or the Hall to escape by.
+    void onPlayerEntered(const Vec2i& p);
+    void takeTokenAt(int index);
+    void raiseAlarm();
+    void spawnHunters(int count);
+    std::vector<Vec2i> freeSpawnTiles(int minDistanceFromPlayer) const;
 
     Map m_map;
     Player m_player;
     std::vector<std::unique_ptr<Monster>> m_monster;
-    std::vector<Vec2i> m_tokens;
+    std::vector<Vec2i> m_tokenPositions;
     std::deque<std::string> m_message;
     std::vector<MoveEvent> m_lastTurnMoves;
     Rng& m_rng;
     GameState m_state = GameState::Play;
+    int m_alarm = 0;
 };

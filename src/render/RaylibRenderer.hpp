@@ -12,6 +12,7 @@ public:
     void drawEntity(EntityKind kind, const Vec2i& pos, Visibility vis) override;
     void drawHud(int hp, int maxHp, int tokens, int alarm) override;
     void drawLog(const std::deque<std::string>& lines) override;
+    void drawBanner(const char* text) override;
     void endFrame() override;
 private:
     int m_tilePx;

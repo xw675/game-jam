@@ -92,6 +92,16 @@ void RaylibRenderer::drawLog(const std::deque<std::string>& lines) {
     }
 }
 
+void RaylibRenderer::drawBanner(const char* text) {
+    // Drawn last, over everything: the dungeon stays visible underneath so the
+    // player can see what killed them.
+    DrawRectangle(0, 0, GetScreenWidth(), GetScreenHeight(), Fade(BLACK, 0.7f));
+
+    const int size = m_fontPx * 2;
+    const int width = MeasureText(text, size);
+    DrawText(text, (GetScreenWidth() - width) / 2, GetScreenHeight() / 2 - size, size, RAYWHITE);
+}
+
 void RaylibRenderer::endFrame() {
     EndDrawing();
 }
