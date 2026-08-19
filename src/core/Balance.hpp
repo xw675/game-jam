@@ -3,6 +3,9 @@
 namespace Balance {
     constexpr int kPlayerHp = 10;
     constexpr int kPlayerDefence = 12;
+    constexpr int kPlayerMight = 1;
+    constexpr int kPlayerDamageDie = 6;
+
     constexpr int kTokenCount = 4;
     constexpr int kVisionRadius = 6;
     constexpr int kMapWidth = 40;
