@@ -105,7 +105,7 @@ GeneratedMap generateMap(Rng& rng, int width, int height, int roomAttempts) {
         const std::size_t hallRoom = farthestRoomFrom(rooms, gen.playerStart);
         assert(hallRoom != 0 && "the Hall must not be the player's own room");
         gen.hall = rooms[hallRoom].center();
-        gen.map.set(gen.hall, Tile::Hall);   // still walkable; only Wall blocks
+        gen.map.set(gen.hall, Tile::Hall); // still walkable, only Wall blocks
 
         // Tokens fill the earliest remaining rooms, skipping the player's and the Hall's
         for (std::size_t i = 1;

@@ -15,12 +15,8 @@ const char* kindName(EntityKind kind) {
     switch (kind) {
         case EntityKind::Player: 
             return "You";
-        case EntityKind::Wanderer:
-            return "The wanderer";
         case EntityKind::Hunter:
             return "The hunter";
-        case EntityKind::Guard:
-            return "The guard";
         case EntityKind::Token:
             return "The token";
         case EntityKind::Hall:
@@ -41,6 +37,12 @@ World::World(GeneratedMap generated, Rng& rng)
     }
     refreshVisibility(); // the player can see their own starting room
     log("Steal the four tokens, then reach the Hall.");
+}
+
+void World::begin() {
+    if (m_state == GameState::Title) {
+        m_state = GameState::Play;
+    }
 }
 
 void World::refreshVisibility() {

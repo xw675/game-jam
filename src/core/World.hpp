@@ -14,6 +14,9 @@ class World {
 public:
     World(GeneratedMap generated, Rng& rng);
 
+    // Title -> Play
+    void begin();
+
     void playerMove(const Vec2i& delta);
 
     const Map& map() const;
@@ -75,6 +78,6 @@ private:
     // One Visibility per tile
     std::vector<Visibility> m_visibility;
     Rng& m_rng;
-    GameState m_state = GameState::Play;
+    GameState m_state = GameState::Title;
     int m_alarm = 0;
 };

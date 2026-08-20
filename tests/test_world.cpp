@@ -30,6 +30,7 @@ TEST_CASE("the Hall opens only to four tokens, and each token raises the alarm o
     // costs exactly one roll. Four 1s pick the first candidate tile every time.
     SequenceRng rng{{1, 1, 1, 1}};
     World world(makeCorridor(), rng);
+    world.begin(); // the run starts in GameState::Title; nothing moves until then
 
     world.debugKillMonsters();
     REQUIRE(world.alarm() == 0);

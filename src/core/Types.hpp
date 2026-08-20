@@ -2,9 +2,7 @@
 
 enum class EntityKind { 
     Player, 
-    Wanderer, 
     Hunter, 
-    Guard, 
     Token, 
     Hall 
 };
