@@ -5,3 +5,7 @@
 game-jam
 
 /.vscode
+
+run_tests
+
+*.dSYM/
