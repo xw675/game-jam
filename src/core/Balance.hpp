@@ -18,8 +18,11 @@ namespace Balance {
     constexpr int kMapHeight = 24;
     constexpr int kMinRooms = 6;
 
-    constexpr int kHuntersPerAlarm = 1;   // spawned per token, flat
+    constexpr int kHuntersPerAlarm = 1; // spawned per token, flat
     constexpr int kSpawnMinDistance = 10; // no hunter ever appears in your lap
-    constexpr int kAlarmWakesAll = 3;      // at this alarm the keep stops sleeping
-    constexpr int kTokenHeal = kPlayerHp;   // a token restores you; the only heal in the game
+    constexpr int kAlarmWakesAll = 3; // at this alarm the keep stops sleeping
+    constexpr int kTokenHeal = kPlayerHp;
+
+    constexpr int kGrazeWindow = 2; // miss by this much or less and you still scratch
+    constexpr int kGrazeDamage = 1; // set to 0 to switch grazes off
 }

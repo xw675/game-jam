@@ -1,6 +1,7 @@
 #include "World.hpp"
 #include "Hunter.hpp"
 #include "Balance.hpp"
+#include "Dice.hpp"
 #include "Fov.hpp"
 #include <algorithm>
 #include <cstddef>
@@ -197,28 +198,38 @@ std::vector<Vec2i> World::freeSpawnTiles(int minDistanceFromPlayer) const {
 }
 
 void World::attack(Entity& attacker, Entity& defender) {
-    const int roll = m_rng.roll(20);
-    const int total = roll + attacker.might();
+    const AttackResult result =
+        resolveAttack(m_rng, attacker.might(), defender.defence(), attacker.damageDie());
+
+    defender.takeDamage(result.damage);
 
     const bool byPlayer = attacker.kind() == EntityKind::Player;
-    const std::string margin = " (" + std::to_string(total) + " vs " + std::to_string(defender.defence()) + ").";
+    const std::string who = kindName(attacker.kind());
+    const std::string whom = kindName(defender.kind());
+    const std::string hurt = " for " + std::to_string(result.damage);
+    const std::string maths = " (d20: " + std::to_string(result.roll) 
+                            + " +" + std::to_string(attacker.might())
+                            + " = " + std::to_string(result.total)
+                            + " vs " + std::to_string(defender.defence()) + ")";
 
-    if (total < defender.defence()) {
-        log(std::string(kindName(attacker.kind())) + (byPlayer ? " miss " : " misses ")
-            + kindName(defender.kind()) + margin);
-        return;
+    switch (result.outcome) {
+        case AttackOutcome::Miss:
+            log(who + (byPlayer ? " miss " : " misses ") + whom + maths);
+            break;
+        case AttackOutcome::Graze:
+            log(who + (byPlayer ? " graze " : " grazes ") + whom + hurt + maths);
+            break;
+        case AttackOutcome::Hit:
+            log(who + (byPlayer ? " hit " : " hits ") + whom + hurt + maths);
+            break;
+        case AttackOutcome::Critical:
+            log(who + (byPlayer ? " crit " : " crits ") + whom + hurt + maths);
+            break;
     }
 
-    const int damage = m_rng.roll(attacker.damageDie());
-    defender.takeDamage(damage);
-
-    log(std::string(kindName(attacker.kind())) + (byPlayer ? " hit " : " hits ")
-        + kindName(defender.kind()) + " for " + std::to_string(damage) + margin);
-
     if (!defender.isAlive()) {
-        log(defender.kind() == EntityKind::Player
-                ? std::string("You are cut down.")
-                : std::string(kindName(defender.kind())) + " falls.");
+        log(defender.kind() == EntityKind::Player ? std::string("You are cut down.") 
+        : std::string(kindName(defender.kind())) + " falls.");
     }
 }
 
