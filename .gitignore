@@ -3,9 +3,20 @@
 /build
 
 game-jam
+game-jam.exe
 
 /.vscode
 
 run_tests
 
 *.dSYM/
+
+/dist
+
+/ARCHITECTURE.html
+/WALKTHROUGH.html
+/sepakat-walkthrough.html
+/sepakat-script.html
+/PRESENTATION.md
+/SEPAKAT-pitch.pptx
+/tools

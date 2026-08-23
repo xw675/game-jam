@@ -1,0 +1,80 @@
+name: release
+
+# Push a tag (v0, v0.1, ...) and this builds the two downloads and attaches
+# them to the GitHub Release. "Run workflow" on the Actions tab does the same
+# build without publishing anything, which is how you check it before tagging.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  test:
+    name: core tests (no raylib)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # src/core/ includes zero raylib headers, so this runs on a bare box
+      # with no graphics stack. If this job ever needs raylib, the rule broke.
+      - run: make test
+
+  macos:
+    name: macOS .app
+    needs: test
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: brew install raylib
+      - run: bash packaging/package_macos.sh "${{ github.ref_type == 'tag' && github.ref_name || 'v0-dev' }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sepakat-macos
+          path: dist/*.zip
+          if-no-files-found: error
+
+  windows:
+    name: Windows .exe
+    needs: test
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-raylib
+            make
+            zip
+      - uses: actions/checkout@v4
+      - run: bash packaging/package_windows.sh "${{ github.ref_type == 'tag' && github.ref_name || 'v0-dev' }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sepakat-windows
+          path: dist/*.zip
+          if-no-files-found: error
+
+  publish:
+    name: attach to release
+    needs: [macos, windows]
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: upload
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release view "$TAG" >/dev/null 2>&1 \
+            || gh release create "$TAG" --title "$TAG" --generate-notes
+          gh release upload "$TAG" artifacts/*/*.zip --clobber

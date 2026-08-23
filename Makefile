@@ -42,7 +42,9 @@ SRCS := $(wildcard $(SRC_DIR)/*.cpp $(SRC_DIR)/*/*.cpp)
 OBJS := $(SRCS:$(SRC_DIR)/%.cpp=$(OBJ_DIR)/%.o)
 DEPS := $(OBJS:.o=.d)
 
-CXXFLAGS := $(CXXSTD) $(WARNINGS) $(OPT) -I$(SRC_DIR) $(RAYLIB_INC)
+# -MMD -MP is what writes the .d files that `-include $(DEPS)` below reads.
+# Without it a header edit rebuilds nothing.
+CXXFLAGS := $(CXXSTD) $(WARNINGS) $(OPT) -MMD -MP -I$(SRC_DIR) $(RAYLIB_INC)
 
 all: $(NAME)$(EXE)
 

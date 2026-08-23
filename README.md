@@ -10,6 +10,15 @@ You break into the archival vaults to steal four tokens: **Malaya**, **Sabah**, 
 
 Controls: **arrows / WASD** to move (one tile = one turn), walk into a guardian to strike it, **R** to abandon the run and break into a fresh keep. F1–F4 are debug keys (reveal map, grant token, kill monsters, take damage).
 
+## Play it
+
+Grab the zip for your machine from [Releases](https://github.com/xw675/game-jam/releases), unzip, run it. Nothing to install, no compiler needed.
+
+- **Windows** — `SEPAKAT-v0-windows-x64.zip`, double-click `SEPAKAT.exe`. Windows will say "Windows protected your PC" because the exe is not code-signed: **More info -> Run anyway**.
+- **macOS (Apple Silicon)** — `SEPAKAT-v0-macos-arm64.zip`, double-click `SEPAKAT.app`. macOS refuses it the first time for the same reason: **System Settings -> Privacy & Security -> Open Anyway**. Or in a terminal, `xattr -dr com.apple.quarantine SEPAKAT.app`.
+
+Both zips are built from the tagged source by [`.github/workflows/release.yml`](.github/workflows/release.yml). The scripts in `packaging/` are what make them self-contained: raylib is linked in or shipped alongside, so neither zip needs Homebrew or MSYS2 on the player's machine.
+
 ## Build and run
 
 Requires a C++17 compiler, `make`, and **raylib 6.0** (older version should work too)
